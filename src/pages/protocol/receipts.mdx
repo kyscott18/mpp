@@ -1,0 +1,70 @@
+# Receipts [Server acknowledgment of successful payment]
+
+A **Receipt** is the server's acknowledgment of successful payment. Return receipts in the `Payment-Receipt` header on successful responses.
+
+:::info
+The `Payment-Receipt` header is optional. Servers typically include it for auditability, but clients don't need it for correct operation.
+:::
+
+## Header
+
+```http
+HTTP/1.1 200 OK
+Payment-Receipt: eyJzdGF0dXMiOiJzdWNjZXNzIiwibWV0aG9kIjoidGVtcG8iLCJ0aW1lc3RhbXAiOiIyMDI1LTAxLTE1VDEyOjAwOjAwWiJ9
+Content-Type: application/json
+
+{ "data": "Payment received." }
+```
+
+The receipt is a base64url-encoded JSON object.
+
+## Structure
+
+```json
+{
+  "challengeId": "qB3wErTyU7iOpAsD9fGhJk",
+  "method": "tempo",
+  "reference": "0xtx789abc...",
+  "settlement": {
+    "amount": "1000",
+    "currency": "usd"
+  },
+  "status": "success",
+  "timestamp": "2025-01-15T12:00:00Z"
+}
+```
+
+### Fields
+
+| Field | Description |
+|-------|-------------|
+| `challengeId` | The challenge this receipt responds to |
+| `method` | Payment method used |
+| `reference` | Method-specific payment reference (for example, transaction hash or invoice ID) |
+| `settlement` | Actual amount and currency settled |
+| `status` | Payment outcome (`success`) |
+| `timestamp` | When the payment was processed |
+
+## Use cases
+
+Receipts enable:
+
+- **Auditing**—Clients can log payment confirmations
+- **Dispute resolution**—Reference IDs link to payment network records
+- **Reconciliation**—Match payments to requests
+
+## Payment method references
+
+| Payment Method | Reference Format |
+|----------------|------------------|
+| Tempo | Transaction hash (`0xtx789...`) |
+| Stripe | PaymentIntent ID (`pi_1234...`) |
+
+## Learn more
+
+import { Cards } from 'vocs'
+import { SpecCard } from '../../components/SpecCard'
+
+<Cards>
+  <SpecCard to="https://paymentauth.org" />
+</Cards>

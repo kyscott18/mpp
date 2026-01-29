@@ -1,0 +1,71 @@
+# Elysia [Payment middleware for Elysia]
+
+Native [Elysia](https://elysiajs.com) middleware that gates routes behind payment intents.
+
+## Install
+
+:::code-group
+
+```bash [npm]
+npm install mppx elysia
+```
+
+```bash [pnpm]
+pnpm add mppx elysia
+```
+
+```bash [bun]
+bun add mppx elysia
+```
+
+:::
+
+## Usage
+
+Import `Mppx` and `tempo` from `mppx/elysia` to create an Elysia-aware payment handler. Each intent (for example, `charge`) returns an Elysia `beforeHandle` hook you can use with `.guard()` to scope payment to specific routes.
+
+```ts [server.ts]
+import { Elysia } from 'elysia'
+import { Mppx, tempo } from 'mppx/elysia'
+
+const mppx = Mppx.create({ methods: [tempo()] })
+
+const app = new Elysia()
+  .guard(
+    { beforeHandle: mppx.charge({ amount: '1' }) },
+    (app) => app.get('/premium', () => ({ data: 'paid content' })),
+  )
+```
+
+### Global application
+
+Use `.onBeforeHandle()` to apply payment to all routes.
+
+```ts [server.ts]
+import { Elysia } from 'elysia'
+import { Mppx, tempo } from 'mppx/elysia'
+
+const mppx = Mppx.create({ methods: [tempo()] }) // [!code hl]
+
+const app = new Elysia()
+  .onBeforeHandle(mppx.charge({ amount: '1' })) // [!code hl]
+  .get('/premium', () => ({ data: 'paid content' }))
+  .get('/another', () => ({ data: 'also paid' }))
+```
+
+### Session payments
+
+Use `mppx.session()` to gate routes behind session-based payment intents.
+
+```ts [server.ts]
+import { Elysia } from 'elysia'
+import { Mppx, tempo } from 'mppx/elysia'
+
+const mppx = Mppx.create({ methods: [tempo()] })
+
+const app = new Elysia()
+  .guard(
+    { beforeHandle: mppx.session({ amount: '1', unitType: 'token' }) },
+    (app) => app.get('/content', () => ({ data: 'session content' })),
+  )
+```

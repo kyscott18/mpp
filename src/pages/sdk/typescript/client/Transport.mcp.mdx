@@ -1,0 +1,33 @@
+# `Transport.mcp` [MCP transport for payments]
+
+MCP transport for client-side payment handling.
+
+## Usage
+
+```ts twoslash
+import { Mppx, Transport, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  methods: [tempo({ account })],
+  transport: Transport.mcp(), // [!code focus]
+})
+```
+
+## Behavior
+
+- Detects payment required using **error code `-32042`**
+- Extracts challenges from **`error.data.challenges[0]`**
+- Sends credentials using **`_meta["org.paymentauth/credential"]`**
+
+## Return type
+
+```ts
+type McpTransport = Transport<Mcp.Request, Mcp.Response>
+```
+
+## Parameters
+
+None.

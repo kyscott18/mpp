@@ -1,0 +1,35 @@
+# `Receipt.serialize` [Serialize a Receipt to a string]
+
+Serializes a receipt to the Payment-Receipt header format.
+
+## Usage
+
+```ts twoslash
+import { Receipt } from 'mppx'
+
+const receipt = Receipt.from({
+  method: 'tempo',
+  reference: '0x...',
+  status: 'success',
+  timestamp: new Date().toISOString(),
+})
+
+const header = Receipt.serialize(receipt)
+// => "eyJzdGF0dXMiOiJzdWNjZXNzIiwidGltZXN0YW1wIjoi..."
+```
+
+## Return type
+
+```ts
+type ReturnType = string
+```
+
+A base64url-encoded string suitable for the Payment-Receipt header value.
+
+## Parameters
+
+### receipt
+
+- **Type:** `Receipt`
+
+The receipt to serialize.

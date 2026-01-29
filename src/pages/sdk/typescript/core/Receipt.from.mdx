@@ -1,0 +1,58 @@
+# `Receipt.from` [Create a new Receipt]
+
+Creates a receipt from the given parameters.
+
+## Usage
+
+```ts twoslash
+import { Receipt } from 'mppx'
+
+const receipt = Receipt.from({
+  method: 'tempo',
+  reference: '0x...',
+  status: 'success',
+  timestamp: new Date().toISOString(),
+})
+```
+
+## Return type
+
+```ts
+type ReturnType = Receipt
+```
+
+A validated receipt object.
+
+## Parameters
+
+### parameters
+
+#### externalId (optional)
+
+- **Type:** `string`
+
+External reference ID echoed from the Credential payload.
+
+#### method
+
+- **Type:** `string`
+
+Payment method used (for example, "tempo", "stripe").
+
+#### reference
+
+- **Type:** `string`
+
+Method-specific reference (for example, transaction hash).
+
+#### status
+
+- **Type:** `'success'`
+
+Payment status.
+
+#### timestamp
+
+- **Type:** `string`
+
+RFC 3339 settlement timestamp.

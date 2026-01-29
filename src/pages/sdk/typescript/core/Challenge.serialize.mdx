@@ -1,0 +1,38 @@
+# `Challenge.serialize` [Serialize a Challenge to a header]
+
+Serializes a challenge to the WWW-Authenticate header format.
+
+## Usage
+
+```ts twoslash
+import { Challenge } from 'mppx'
+
+const challenge = Challenge.from({
+  id: 'abc123',
+  intent: 'charge',
+  method: 'tempo',
+  realm: 'mpp.dev',
+  request: { amount: '1000000', currency: '0x...', recipient: '0x...' },
+})
+
+const header = Challenge.serialize(challenge)
+// @log: 'Payment id="abc123", realm="mpp.dev", method="tempo", intent="charge", request="eyJhbW91bnQiOi..."'
+```
+
+## Return type
+
+```ts
+type ReturnType = string
+```
+
+A string suitable for the WWW-Authenticate header value.
+
+The serialized string includes optional fields when present: `description`, `digest`, `expires`, and `opaque` (server-defined correlation data set via `meta` in `Challenge.from`).
+
+## Parameters
+
+### challenge
+
+- **Type:** `Challenge`
+
+The challenge to serialize.

@@ -1,0 +1,112 @@
+# `Challenge.from` [Create a new Challenge]
+
+Creates a challenge from the given parameters.
+
+If `secretKey` option is provided, the challenge ID is computed as HMAC-SHA256 over the challenge parameters (realm|method|intent|request|expires|digest|opaque), cryptographically binding the ID to its contents.
+
+## Usage
+
+```ts twoslash
+import { Challenge } from 'mppx'
+
+// With HMAC-bound ID (recommended for servers)
+const challenge = Challenge.from(
+  {
+    intent: 'charge',
+    method: 'tempo',
+    realm: 'mpp.dev',
+    request: { amount: '1000000', currency: '0x...', recipient: '0x...' },
+    secretKey: 'my-secret',
+  },
+)
+```
+
+### With explicit ID
+
+Use an explicit ID when you don't need HMAC-bound challenge verification.
+
+```ts twoslash
+import { Challenge } from 'mppx'
+
+const challenge = Challenge.from({
+  id: 'abc123',
+  intent: 'charge',
+  method: 'tempo',
+  realm: 'mpp.dev',
+  request: { amount: '1000000', currency: '0x...', recipient: '0x...' },
+})
+```
+
+## Return type
+
+```ts
+type ReturnType = Challenge
+```
+
+A challenge object.
+
+## Parameters
+
+### parameters
+
+Challenge parameters. Must include either `id` or `secretKey`.
+
+#### description (optional)
+
+- **Type:** `string`
+
+Human-readable description of the payment.
+
+#### digest (optional)
+
+- **Type:** `string`
+
+Digest of the request body.
+
+#### expires (optional)
+
+- **Type:** `string`
+
+Expiration timestamp (ISO 8601).
+
+#### id (when not using secretKey)
+
+- **Type:** `string`
+
+Explicit challenge ID.
+
+#### intent
+
+- **Type:** `string`
+
+Intent type (for example, `"charge"`, `"session"`).
+
+#### meta (optional)
+
+- **Type:** `Record<string, string>`
+
+Server-defined correlation data, serialized as `opaque` on the Challenge.
+
+#### method
+
+- **Type:** `string`
+
+Payment method (for example, "tempo", "stripe").
+
+#### realm
+
+- **Type:** `string`
+
+Server realm (for example, hostname).
+
+#### request
+
+- **Type:** `Record<string, unknown>`
+
+Method-specific request data.
+
+#### secretKey (when not using id)
+
+- **Type:** `string`
+
+Secret key for HMAC-bound challenge ID.

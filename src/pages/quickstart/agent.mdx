@@ -1,0 +1,104 @@
+import { Badge, Card, Cards, Tab, Tabs } from 'vocs'
+
+# Use with agents [Connect your agent to MPP-enabled services]
+
+Agents can automatically interact with MPP-enabled services. Here's how to get started.
+
+## Tempo Wallet <Badge variant="info" data-toc-exclude>Recommended</Badge>
+
+The [Tempo Wallet](https://wallet.tempo.xyz) is a managed MPP client with built in spend controls and service discovery. Agents can use `tempo wallet` to pay for powerful new capabilities on demand.
+
+<Tabs>
+<Tab title="Agent">
+
+Paste this into your agent to set up Tempo Wallet:
+
+
+```
+Read https://tempo.xyz/SKILL.md and set up tempo
+```
+
+</Tab>
+<Tab title="Human">
+::::steps
+
+#### Install the CLI
+
+```bash
+curl -fsSL https://tempo.xyz/install | bash
+```
+
+#### Connect your wallet
+
+```bash
+tempo wallet login
+```
+
+#### Verify setup
+
+```bash
+tempo wallet whoami
+```
+
+#### List available services
+
+```bash
+tempo wallet services
+```
+
+#### Make a paid request
+
+```bash
+tempo request -X POST \
+  --json '{"prompt": "a sunset over the ocean"}' \
+  https://fal.mpp.tempo.xyz/fal-ai/flux/dev
+```
+
+::::
+</Tab>
+</Tabs>
+
+## mppx
+
+The [`mppx`](/sdk/typescript/cli) CLI is a lightweight MPP client bundled with the `mppx` package. It is designed for simple use cases and debugging during development.
+
+::::steps
+
+### Install
+
+:::code-group
+```bash [npm]
+npm install -g mppx
+```
+```bash [pnpm]
+pnpm add -g mppx
+```
+```bash [bun]
+bun add -g mppx
+```
+:::
+
+### Create an account
+
+```bash
+mppx account create
+```
+
+### Make a paid request
+
+```bash
+mppx https://mpp.dev/api/ping/paid
+```
+
+::::
+
+## Next steps
+
+<Cards>
+  <Card
+    description="Browse available MPP services and their endpoints"
+    icon="lucide:list"
+    title="Services"
+    to="/services"
+  />
+</Cards>

@@ -1,0 +1,30 @@
+# `Mppx.restore` [Restore the original global fetch]
+
+Restores the original `fetch` after `Mppx.create()` polyfilled it.
+
+## Usage
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+Mppx.create({
+  methods: [tempo({ account })],
+})
+
+// ... use payment-aware fetch ...
+
+Mppx.restore()
+```
+
+## Return type
+
+```ts
+void
+```
+
+## Parameters
+
+None.

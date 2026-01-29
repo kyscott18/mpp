@@ -1,0 +1,74 @@
+# `Mppx.toNodeListener` [Adapt payments for Node.js HTTP]
+
+Wraps a payment handler to create a Node.js HTTP listener.
+
+## Usage
+
+```ts twoslash
+import * as http from 'node:http'
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo()],
+})
+
+http.createServer(async (req, res) => {
+  const result = await Mppx.toNodeListener(
+    mppx.charge({
+      amount: '0.1', 
+      currency: '0x...', 
+      recipient: '0x...',
+    }),
+  )(req, res)
+
+  if (result.status === 402) return
+
+  res.end('OK')
+})
+```
+
+## Behavior
+
+- **On `402`:** Writes the Challenge response headers and body, then ends the connection.
+- **On `200`:** Sets the `Payment-Receipt` header; the caller writes the response body.
+
+## Return type
+
+```ts
+type ReturnType = (
+  req: IncomingMessage,
+  res: ServerResponse,
+) => Promise<MethodFn.Response<Transport.Http>>
+```
+
+## Parameters
+
+### handler
+
+- **Type:** `(input: Request) => Promise<MethodFn.Response<Transport.Http>>`
+
+The payment handler function returned by calling an intent on the payment object.
+
+```ts twoslash
+import * as http from 'node:http'
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo()],
+})
+
+http.createServer(async (req, res) => {
+  const result = await Mppx.toNodeListener(
+    // [!code focus:start]
+    mppx.charge({
+      amount: '0.1',
+      currency: '0x...',
+      recipient: '0x...',
+    }),
+    // [!code focus:end]
+  )(req, res)
+
+  if (result.status === 402) return
+  res.end('OK')
+})
+```

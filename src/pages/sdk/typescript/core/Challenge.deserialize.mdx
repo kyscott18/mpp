@@ -1,0 +1,46 @@
+# `Challenge.deserialize` [Deserialize a Challenge from a header]
+
+Deserializes a WWW-Authenticate header value to a challenge.
+
+## Usage
+
+```ts twoslash
+import { Challenge } from 'mppx'
+
+const header = 'Payment id="abc123", realm="mpp.dev", method="tempo", intent="charge", request="eyJhbW91bnQiOi..."'
+const challenge = Challenge.deserialize(header)
+```
+
+### With method type narrowing
+
+Use a method definition to get type-safe access to method-specific request fields.
+
+```ts twoslash
+import { Challenge } from 'mppx'
+import { Methods } from 'mppx/tempo'
+
+const header = 'Payment id="abc123", realm="mpp.dev", method="tempo", intent="charge", request="eyJhbW91bnQiOi..."'
+const challenge = Challenge.deserialize(header, { methods: [Methods.charge] })
+```
+
+## Return type
+
+```ts
+type ReturnType = Challenge
+```
+
+The deserialized Challenge object. If the serialized header contains an `opaque` parameter, it is deserialized and stored as `opaque` on the Challenge (accessible via `Challenge.meta`).
+
+## Parameters
+
+### options (optional)
+
+- **Type:** `{ methods?: readonly Method.Method[] }`
+
+Optional settings to narrow the Challenge type using method intents.
+
+### value
+
+- **Type:** `string`
+
+The WWW-Authenticate header value.

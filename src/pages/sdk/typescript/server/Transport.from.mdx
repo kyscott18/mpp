@@ -1,0 +1,79 @@
+# `Transport.from` [Create a custom transport]
+
+Creates a custom server-side transport.
+
+## Usage
+
+```ts twoslash
+import { Challenge, Credential, Receipt } from 'mppx'
+import { Transport } from 'mppx/server'
+
+const http = Transport.from<Request, Response>({
+  name: 'http',
+
+  getCredential(request) {
+    const header = request.headers.get('Authorization')
+    if (!header) return null
+    const payment = Credential.extractPaymentScheme(header)
+    if (!payment) return null
+    return Credential.deserialize(payment)
+  },
+
+  respondChallenge({ challenge, error }) {
+    const headers: Record<string, string> = {
+      'WWW-Authenticate': Challenge.serialize(challenge),
+      'Cache-Control': 'no-store',
+    }
+
+    let body: string | null = null
+    if (error) {
+      headers['Content-Type'] = 'application/problem+json'
+      body = JSON.stringify(error.toProblemDetails(challenge.id))
+    }
+
+    return new Response(body, { status: 402, headers })
+  },
+
+  respondReceipt({ receipt, response }) {
+    const headers = new Headers(response.headers)
+    headers.set('Payment-Receipt', Receipt.serialize(receipt))
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    })
+  },
+})
+```
+
+## Return type
+
+```ts
+type ReturnType = Transport<Input, ChallengeOutput, ReceiptOutput>
+```
+
+## Parameters
+
+### getCredential
+
+- **Type:** `(input: Input) => Credential | null`
+
+Extracts Credential from the transport input. Returns `null` if no Credential was provided, or throws if malformed.
+
+### name
+
+- **Type:** `string`
+
+Transport name for identification.
+
+### respondChallenge
+
+- **Type:** `(options: { challenge: Challenge; error?: PaymentError; input: Input }) => ChallengeOutput | Promise<ChallengeOutput>`
+
+Creates a transport response for a payment challenge.
+
+### respondReceipt
+
+- **Type:** `(options: { challengeId: string; receipt: Receipt; response: ReceiptOutput }) => ReceiptOutput`
+
+Attaches a receipt to a successful response.

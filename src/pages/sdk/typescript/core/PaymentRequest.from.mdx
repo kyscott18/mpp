@@ -1,0 +1,31 @@
+# `PaymentRequest.from` [Create a payment request]
+
+Creates a payment request from the given parameters.
+
+## Usage
+
+```ts twoslash
+import { PaymentRequest } from 'mppx'
+
+const request = PaymentRequest.from({
+  amount: '1000000',
+  currency: '0x20c0000000000000000000000000000000000000',
+  recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+})
+```
+
+## Return type
+
+```ts
+type ReturnType = request
+```
+
+The request object passed in (identity function for type inference).
+
+## Parameters
+
+### request
+
+- **Type:** `Record<string, unknown>`
+
+Request parameters. The shape depends on the intent being used.

@@ -1,0 +1,103 @@
+# `Mppx.create` [Create a server-side payment handler]
+
+Creates a server-side payment handler from a method.
+
+## Usage
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const payment = Mppx.create({
+  methods: [tempo()],
+})
+```
+
+### With custom transport
+
+Use a custom transport for non-HTTP environments like MCP servers.
+
+```ts twoslash
+import { Mppx, tempo, Transport } from 'mppx/server'
+
+const payment = Mppx.create({
+  methods: [tempo()],
+  transport: Transport.mcpSdk(),
+})
+```
+
+## Return type
+
+```ts
+import type { Method } from 'mppx'
+import type { Mppx, Transport } from 'mppx/server'
+
+type ReturnType = Mppx<[Method.Server], Transport.Http>
+```
+
+The returned object includes the method's intent functions (for example, `charge`) which you call to handle payment requests.
+
+## Parameters
+
+### methods
+
+- **Type:** `readonly Method.Server[]`
+
+Array of payment methods (for example, `[tempo()]`).
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const payment = Mppx.create({
+  // [!code focus:start]
+  methods: [tempo()],
+  // [!code focus:end]
+})
+```
+
+### realm (optional)
+
+- **Type:** `string`
+- **Default:** Auto-detected from environment variables (`MPP_REALM`, `FLY_APP_NAME`, `HEROKU_APP_NAME`, `HOST`, `HOSTNAME`, `RAILWAY_PUBLIC_DOMAIN`, `RENDER_EXTERNAL_HOSTNAME`, `VERCEL_URL`, `WEBSITE_HOSTNAME`), falling back to `"MPP Payment"`.
+
+Server realm (for example, hostname). Auto-detected from common platform environment variables. Set explicitly to override.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const payment = Mppx.create({
+  methods: [tempo()],
+  realm: 'mpp.dev', // [!code focus]
+})
+```
+
+### secretKey (optional)
+
+- **Type:** `string`
+- **Default:** Auto-detected from `MPP_SECRET_KEY` environment variable. Throws if neither provided nor set.
+
+Secret key for HMAC-bound challenge IDs. Enables stateless verification—the server verifies that a Challenge was issued by itself without storing state.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const payment = Mppx.create({
+  methods: [tempo()],
+  secretKey: process.env.MPP_SECRET_KEY!, // [!code focus]
+})
+```
+
+### transport (optional)
+
+- **Type:** `Transport`
+- **Default:** `Transport.http()`
+
+Transport to use for handling payment requests.
+
+```ts twoslash
+import { Mppx, tempo, Transport } from 'mppx/server'
+
+const payment = Mppx.create({
+  methods: [tempo()],
+  transport: Transport.mcp(), // [!code focus]
+})
+```

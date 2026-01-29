@@ -1,0 +1,186 @@
+# `Method.tempo.session` [Low-cost high-throughput payments]
+
+Creates a Tempo payment session method for server-side voucher verification and channel management.
+
+## Usage
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  // [!code focus:start]
+  methods: [
+    tempo.session({
+      currency: '0x20c0000000000000000000000000000000000000',
+      recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    }),
+  ],
+  // [!code focus:end]
+})
+```
+
+### With charge and session
+
+Register both intents on a single server.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [
+    tempo.charge(),
+    tempo.session(),
+  ],
+})
+```
+
+## Return type
+
+```ts
+import type { Method } from 'mppx'
+
+type ReturnType = Method.Server
+```
+
+## Parameters
+
+### account (optional)
+
+- **Type:** `Account | undefined`
+
+Account used as the recipient and for session closure.
+
+### amount (optional)
+
+- **Type:** `string`
+
+Default amount to charge per unit.
+
+### channelStateTtl (optional)
+
+- **Type:** `number`
+- **Default:** `60000`
+
+TTL in milliseconds for cached on-chain channel state. After this duration, the server re-queries on-chain state during voucher handling to detect forced close requests.
+
+### currency (optional)
+
+- **Type:** `Address`
+
+Default TIP-20 token address for the payment currency.
+
+### decimals (optional)
+
+- **Type:** `number`
+- **Default:** `6`
+
+Decimal places for amount parsing.
+
+### escrowContract (optional)
+
+- **Type:** `Address`
+
+Escrow contract address for the payment channel. Defaults to the canonical escrow contract for the given chain ID.
+
+### feePayer (optional)
+
+- **Type:** `Account | string | true`
+
+Account or URL for sponsoring open and top-up transaction fees. Pass a viem `Account` to co-sign locally, a URL string to delegate to a remote [fee payer service](https://docs.tempo.xyz/sdk/typescript/server/handler.feePayer), or `true` when the `account` parameter doubles as the fee payer.
+
+### getClient (optional)
+
+- **Type:** `(parameters: { chainId: number }) => MaybePromise<Client>`
+
+Function that returns a viem client for the given chain ID.
+
+### minVoucherDelta (optional)
+
+- **Type:** `string`
+- **Default:** `"0"`
+
+Minimum voucher delta to accept as a numeric string. Rejects vouchers where the increment over the previous highest voucher is below this threshold.
+
+### recipient (optional)
+
+- **Type:** `Address`
+
+Default recipient address for payments.
+
+### sse (optional)
+
+- **Type:** `boolean | { poll?: boolean; pollingInterval?: number }`
+
+Enable SSE streaming. Pass `true` to enable with defaults, or an options object to configure SSE (for example, `{ poll: true }` for Cloudflare Workers compatibility).
+
+### store (optional)
+
+- **Type:** `Store`
+- **Default:** `Store.memory()`
+
+Storage backend for persisting channel and session state. Implements atomic read-modify-write operations for concurrency safety.
+
+```ts twoslash
+import { Store, tempo } from 'mppx/server'
+
+const method = tempo.session({
+  store: Store.memory(), // [!code focus]
+})
+```
+
+### suggestedDeposit (optional)
+
+- **Type:** `string`
+
+Suggested deposit amount communicated to clients in the challenge.
+
+### testnet (optional)
+
+- **Type:** `boolean`
+
+Testnet mode.
+
+### unitType (optional)
+
+- **Type:** `string`
+
+Unit type label (for example, "token", "byte", "request").
+
+### waitForConfirmation (optional)
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Whether to wait for open transactions to confirm on-chain before responding. When `false`, the transaction is simulated and broadcast without waiting for inclusion.
+
+## Related
+
+### `tempo.settle`
+
+One-shot settlement: reads the highest voucher from the store and submits it on-chain. Use this for periodic batch settlement outside the request handler.
+
+```ts
+import { tempo } from 'mppx/server'
+import { Store } from 'mppx/server'
+import { createClient, http } from 'viem'
+import { tempo as tempoChain } from 'viem/chains'
+
+const client = createClient({ chain: tempoChain, transport: http() })
+const store = Store.memory()
+
+// Settle a specific channel
+const txHash = await tempo.settle(store, client, '0xchannelId...')
+```
+
+#### Parameters
+
+- **store** — `ChannelStore` — The channel store instance.
+- **client** — `Client` — A viem client for on-chain interaction.
+- **channelId** — `Hex` — The channel to settle.
+- **options.escrowContract** (optional) — `Address` — Escrow contract override.
+- **options.feePayer** (optional) — `Account | string` — Fee payer account or relay URL.
+
+#### Return type
+
+- **Type:** `Hex` — The settlement transaction hash.
+

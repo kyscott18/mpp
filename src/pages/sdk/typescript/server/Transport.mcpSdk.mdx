@@ -1,0 +1,43 @@
+# `Transport.mcpSdk` [MCP SDK server-side transport]
+
+MCP SDK transport for server-side payment handling with [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk).
+
+## Usage
+
+```ts
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp'
+import { Mppx, tempo, Transport } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo()],
+  transport: Transport.mcpSdk(),
+})
+
+const server = new McpServer({ name: 'example', version: '1.0.0' })
+
+server.registerTool('premium', { description: 'A premium tool' }, async (extra) => {
+  const result = await mppx.charge({
+    amount: '0.1', currency: '0x...', recipient: '0x...',
+  })(extra)
+
+  if (result.status === 402) throw result.challenge
+
+  return result.withReceipt({ content: [{ type: 'text', text: 'Success!' }] })
+})
+```
+
+## Behavior
+
+- Reads credentials from `_meta["org.paymentauth/credential"]`
+- Issues challenges as `McpError` with code `-32042` and challenge in `error.data`
+- Attaches receipts in `_meta["org.paymentauth/receipt"]` on tool results
+
+## Return type
+
+```ts
+import type { CallToolResult, McpError } from '@modelcontextprotocol/sdk/types.js'
+
+type ReturnType = Transport<Extra, McpError, CallToolResult>
+```
+
+Where `Extra` is the MCP SDK tool handler "extra" parameter compatible with [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk) `RequestHandlerExtra`.

@@ -1,0 +1,47 @@
+import { Cards, Tab, Tabs } from 'vocs'
+import { TempoMethodCard, CardMethodCard, LightningMethodCard, StripeMethodCard, CustomMethodCard } from '../../components/cards'
+
+# Payment methods [Available methods and how to choose one]
+
+Payment methods define how clients pay for resources protected by the Machine Payments Protocol. Each method specifies its payment rails, credential format, and verification logic.
+
+## Overview
+
+When a server responds with `402` Payment Required, the `WWW-Authenticate` header includes a `method` parameter indicating which payment method to use. If supported, the client can then use the corresponding payment method to generate a Credential and retry the request.
+
+<Tabs>
+  <Tab title="Tempo">
+```http
+HTTP/1.1 402 Payment Required
+WWW-Authenticate: Payment method="tempo" intent="charge", ...
+```
+  </Tab>
+  <Tab title="Stripe">
+```http
+HTTP/1.1 402 Payment Required
+WWW-Authenticate: Payment method="stripe", intent="charge", ...
+```
+  </Tab>
+  <Tab title="Card">
+```http
+HTTP/1.1 402 Payment Required
+WWW-Authenticate: Payment method="card", intent="charge", ...
+```
+  </Tab>
+  <Tab title="Lightning">
+```http
+HTTP/1.1 402 Payment Required
+WWW-Authenticate: Payment method="lightning", intent="charge", ...
+```
+  </Tab>
+</Tabs>
+
+## Available methods
+
+<Cards>
+  <TempoMethodCard />
+  <StripeMethodCard />
+  <CardMethodCard />
+  <LightningMethodCard />
+  <CustomMethodCard />
+</Cards>

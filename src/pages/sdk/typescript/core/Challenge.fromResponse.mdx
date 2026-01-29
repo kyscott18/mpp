@@ -1,0 +1,50 @@
+# `Challenge.fromResponse` [Extract a Challenge from a Response]
+
+Extracts the challenge from a Response's WWW-Authenticate header.
+
+## Usage
+
+```ts twoslash
+import { Challenge } from 'mppx'
+
+const response = await fetch('/resource')
+if (response.status === 402) {
+  const challenge = Challenge.fromResponse(response)
+}
+```
+
+### With method type narrowing
+
+Use a method definition to get type-safe access to method-specific request fields.
+
+```ts twoslash
+import { Challenge } from 'mppx'
+import { Methods } from 'mppx/tempo'
+
+const response = await fetch('/resource')
+if (response.status === 402) {
+  const challenge = Challenge.fromResponse(response, { methods: [Methods.charge] })
+}
+```
+
+## Return type
+
+```ts
+type ReturnType = Challenge
+```
+
+The deserialized challenge object.
+
+## Parameters
+
+### options (optional)
+
+- **Type:** `{ methods?: readonly Method.Method[] }`
+
+Optional settings to narrow the Challenge type using method intents.
+
+### response
+
+- **Type:** `Response`
+
+The HTTP response (must be `402` status).

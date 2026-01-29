@@ -1,0 +1,80 @@
+# Express [Payment middleware for Express]
+
+Native [Express](https://expressjs.com) middleware that gates routes behind payment intents.
+
+## Install
+
+:::code-group
+
+```bash [npm]
+npm install mppx express
+```
+
+```bash [pnpm]
+pnpm add mppx express
+```
+
+```bash [bun]
+bun add mppx express
+```
+
+:::
+
+## Usage
+
+Import `Mppx` and `tempo` from `mppx/express` to create an Express-aware payment handler. Each intent (for example, `charge`) returns an Express `RequestHandler` you can slot directly into your route.
+
+```ts [server.ts]
+import express from 'express'
+import { Mppx, tempo } from 'mppx/express'
+
+const app = express()
+const mppx = Mppx.create({ methods: [tempo()] }) // [!code hl]
+
+app.get(
+  '/premium', 
+  mppx.charge({ amount: '1' }), // [!code hl]
+  (req, res) => res.json({ data: 'paid content' }),
+)
+```
+
+### Session payments
+
+Use `mppx.session()` to gate routes behind session-based payment intents.
+
+```ts [server.ts]
+import express from 'express'
+import { Mppx, tempo } from 'mppx/express'
+
+const app = express()
+const mppx = Mppx.create({ methods: [tempo()] })
+
+app.get(
+  '/content',
+  mppx.session({ amount: '1', unitType: 'token' }),
+  (req, res) => res.json({ data: 'session content' }),
+)
+```
+
+### Identifying the payer
+
+After the middleware verifies payment, the `Authorization` header is still on the request. Parse it with `Credential.deserialize` to read the payer's identity from the `source` field—a DID such as `did:pkh:eip155:1:0x...`.
+
+```ts [server.ts]
+import express from 'express'
+import { Credential } from 'mppx'
+import { Mppx, tempo } from 'mppx/express'
+
+const app = express()
+const mppx = Mppx.create({ methods: [tempo()] })
+
+app.get(
+  '/premium',
+  mppx.charge({ amount: '1' }),
+  (req, res) => {
+    const credential = Credential.deserialize(req.headers.authorization!)
+    const payer = credential.source // "did:pkh:eip155:1:0x..."
+    res.json({ payer })
+  },
+)
+```

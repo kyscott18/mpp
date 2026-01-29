@@ -1,0 +1,302 @@
+import { Badge, Cards } from 'vocs'
+import { ServerPrompt } from '../../components/QuickstartPrompt'
+import { ClientQuickstartCard, TempoMethodCard, MppxCreateReferenceCard } from '../../components/cards'
+
+# Add payments to your API [Charge for access to protected resources]
+
+## Overview
+
+This quickstart demonstrates how to plug MPP into any server framework to accept payments for protected resources. Pick the path that suits you:
+
+- [**Prompt mode**](#prompt-mode): paste a prompt into your coding agent and build in one prompt
+- [**Framework mode**](#framework-mode): use `mppx` middleware for Next.js, Hono, Elysia, or Express
+- [**Manual mode**](#advanced-manual-mode): call `mppx/server` directly with the Fetch API
+
+## Prompt mode
+
+Paste this into your coding agent to set up a server with `mppx` in one prompt:
+
+<ServerPrompt />
+
+## Framework mode
+
+Use the framework-specific middleware from `mppx` to integrate payment into your server. Each middleware handles the `402` Challenge/Credential flow and attaches receipts automatically.
+
+::::code-group
+
+```ts [Next.js]
+import { Mppx, tempo } from 'mppx/nextjs'
+
+// [!code hl:start]
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000', // pathUSD on Tempo
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+// [!code hl:end]
+
+export const GET = 
+  mppx.charge({ amount: '0.1' }) // [!code hl]
+  (() => Response.json({ data: '...' }))
+```
+
+```ts [Hono]
+import { Hono } from 'hono'
+import { Mppx, tempo } from 'mppx/hono'
+
+const app = new Hono()
+
+// [!code hl:start]
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+// [!code hl:end]
+
+app.get(
+  '/resource', 
+  mppx.charge({ amount: '0.1' }), // [!code hl]
+  (c) => c.json({ data: '...' }),
+)
+```
+
+```ts [Elysia]
+import { Elysia } from 'elysia'
+import { Mppx, tempo } from 'mppx/elysia'
+
+// [!code hl:start]
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+// [!code hl:end]
+
+const app = new Elysia()
+  .guard(
+    { beforeHandle: mppx.charge({ amount: '0.1' }) }, // [!code hl]
+    (app) => app.get('/resource', () => ({ data: '...' })),
+  )
+```
+
+```ts [Express]
+import express from 'express'
+import { Mppx, tempo } from 'mppx/express'
+
+const app = express()
+
+// [!code hl:start]
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+// [!code hl:end]
+
+app.get(
+  '/resource', 
+  mppx.charge({ amount: '0.1' }), // [!code hl]
+  (req, res) => res.json({ data: '...' }))
+```
+
+::::
+
+:::tip
+You can also override `currency` and `recipient` per call if different routes need different payment configurations.
+
+```ts
+mppx.charge({ 
+  amount: '0.1', 
+  currency: '0x…', // [!code ++]
+  recipient: '0x…', // [!code ++]
+})
+```
+:::
+
+:::note
+Don't see your framework? `mppx` is designed to be framework-agnostic. See [Manual mode](#advanced-manual-mode) below.
+:::
+
+## Advanced: manual mode
+
+If you prefer full control over the payment flow, use `mppx/server` directly with the Fetch API.
+
+```ts
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+
+// [!code focus:start]
+export async function handler(request: Request) { 
+  const response = await mppx.charge({ amount: '0.1' })(request) 
+  // [!code focus:end]
+
+  // Payment required: send 402 response with challenge 
+  if (response.status === 402) return response.challenge 
+
+  // Payment verified: attach receipt and return resource 
+  return response.withReceipt(Response.json({ data: '...' })) 
+} 
+```
+
+:::info[Currency and recipient values]
+`currency` is the TIP-20 token contract address—[`0x20c0…`](https://explore.tempo.xyz/address/0x20c0000000000000000000000000000000000000?live=false) is pathUSD on Tempo. `recipient` is the address that receives payment. See [Tempo payment method](/payment-methods/tempo) for supported tokens.
+:::
+
+The intent handler accepts a [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)-compatible request object, and returns a `Response` object.
+
+The Fetch API is compatible with most server frameworks, including: [Hono](https://hono.dev), [Deno](https://deno.com), [Cloudflare Workers](https://workers.dev), [Next.js](https://nextjs.org),
+[Bun](https://bun.sh), and other Fetch API-compatible frameworks.
+
+:::tip
+You can also override `currency` and `recipient` per call if different routes need different payment configurations.
+
+```ts
+const response = await mppx.charge({ 
+  amount: '0.1', 
+  currency: '0x…', // [!code ++]
+  recipient: '0x…', // [!code ++]
+})(request) 
+```
+:::
+
+## Node.js & Express compatibility
+
+If your framework doesn't support the **Fetch API** (for example, Express or Node.js), you're likely interfacing with the [Node.js Request Listener API](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener).
+
+Use the `Mppx.toNodeListener` helper to transform the handler into a Node.js-compatible listener.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+
+type IncomingMessage = import('node:http').IncomingMessage
+type ServerResponse = import('node:http').ServerResponse
+// ---cut---
+export async function handler(req: IncomingMessage, res: ServerResponse) { 
+  const response = await Mppx.toNodeListener( // [!code ++]
+    mppx.charge({ amount: '0.1' })
+  )(req, res) // [!code ++]
+
+  // Payment required: send 402 response with challenge 
+  if (response.status === 402) return response.challenge 
+
+  // Payment verified: attach receipt and return resource 
+  return response.withReceipt(Response.json({ data: '...' })) 
+} 
+```
+
+
+## Push & pull modes
+
+Tempo charges support two transaction submission modes, determined by the client:
+
+- **`pull` mode (default)**: the client signs the transaction and sends the serialized transaction to the server. The server broadcasts it and verifies on-chain. This enables the server to sponsor gas fees via a `feePayer`.
+- **`push` mode**: the client builds, signs, and broadcasts the transaction itself (for example, via a browser wallet). It sends the transaction hash to the server, which verifies the payment by fetching the receipt.
+
+Your server handles both modes automatically—no configuration required. The server inspects the credential payload type (`transaction` for pull, `hash` for push) and verifies accordingly.
+
+If you would like to force a specific mode, you can set the `mode` parameter to `'pull'` or `'push'`.
+
+```ts
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    mode: 'push', // [!code focus]
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+```
+
+### Fee sponsorship
+
+To sponsor gas fees for pull-mode clients, pass a `feePayer` account to `tempo()`:
+
+```ts
+import { Mppx, tempo } from 'mppx/server'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    feePayer: privateKeyToAccount('0x…'), // [!code focus]
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+```
+
+It is possible to pass a [fee payer service](https://docs.tempo.xyz/sdk/typescript/server/handler.feePayer) URL instead:
+
+```ts
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    feePayer: 'https://sponsor.example.com', // [!code focus]
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })],
+})
+```
+
+When a pull-mode client submits a signed transaction, the server co-signs with the fee payer account (or delegates to the relay) before broadcasting. Push-mode clients pay their own gas, so `feePayer` is ignored for those requests.
+
+### Optimistic verification
+
+By default, the server waits for onchain confirmation before returning a Receipt. For lower latency, set `waitForConfirmation: false` to return immediately after simulation:
+
+```ts
+const mppx = Mppx.create({
+  methods: [tempo({
+    currency: '0x20c0000000000000000000000000000000000000',
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    waitForConfirmation: false, // [!code focus]
+  })],
+})
+```
+
+:::warning
+Optimistic verification simulates the transaction but does not wait for inclusion. If the transaction reverts onchain after broadcast, the Receipt does not reflect the failure. Only use this when latency matters more than guaranteed confirmation.
+:::
+
+## Testing your server
+
+After your server is running, test it with the `mppx` CLI:
+
+```bash
+# Create an account funded with testnet tokens
+$ npx mppx account create
+
+# Make a paid request
+$ npx mppx <your-server>/resource
+```
+
+:::tip
+Use `npx mppx --inspect` to debug your server's Challenge response without making any payments.
+:::
+
+## Next steps
+
+<Cards>
+  <ClientQuickstartCard />
+  <TempoMethodCard />
+  <MppxCreateReferenceCard to="/sdk/typescript/server/Mppx.create" />
+</Cards>

@@ -1,0 +1,44 @@
+# `Challenge.verify` [Verify a Challenge HMAC]
+
+Verifies that a challenge ID matches the expected HMAC for the given parameters.
+
+## Usage
+
+```ts twoslash
+import { Challenge } from 'mppx'
+
+const challenge = Challenge.from({
+  intent: 'charge',
+  method: 'tempo',
+  realm: 'mpp.dev',
+  request: { amount: '1000000', currency: '0x...', recipient: '0x...' },
+  secretKey: 'my-secret',
+})
+
+const isValid = Challenge.verify(challenge, { secretKey: 'my-secret' })
+// => true
+```
+
+## Return type
+
+```ts
+type ReturnType = boolean
+```
+
+`true` if the challenge ID is valid, `false` otherwise.
+
+## Parameters
+
+### challenge
+
+- **Type:** `Challenge`
+
+The challenge to verify.
+
+### options
+
+#### secretKey
+
+- **Type:** `string`
+
+Secret key for HMAC-bound challenge ID verification.

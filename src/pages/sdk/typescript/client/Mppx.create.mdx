@@ -1,0 +1,206 @@
+# `Mppx.create` [Create a payment-aware fetch client]
+
+Creates a client-side payment handler. Returns a payment handler with a `fetch` function that automatically handles `402` Payment Required responses. By default, also polyfills `globalThis.fetch`.
+
+## Usage
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+Mppx.create({
+  methods: [tempo({ account })],
+})
+
+// Global fetch now handles 402 automatically
+const res = await fetch('https://mpp.dev/api/ping/paid')
+```
+
+### Without polyfill
+
+Set `polyfill: false` to get a scoped fetch without modifying the global:
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  methods: [tempo({ account })],
+  polyfill: false, // [!code hl]
+})
+
+// Use the returned fetch // [!code hl]
+const res = await mppx.fetch('https://mpp.dev/api/ping/paid') // [!code hl]
+```
+
+### Manual credential handling
+
+For full control over the payment flow:
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const mppx = Mppx.create({
+  methods: [tempo()],
+  polyfill: false, // [!code hl]
+})
+
+// [!code hl:start]
+const response = await fetch('https://mpp.dev/api/ping/paid')
+
+if (response.status === 402) {
+  const credential = await mppx.createCredential(response, {
+    account: privateKeyToAccount('0x...'),
+  })
+
+  const paidResponse = await fetch('https://mpp.dev/api/ping/paid', {
+    headers: { Authorization: credential },
+  })
+}
+// [!code hl:end]
+```
+
+## Return type
+
+```ts
+type Mppx = {
+  /** Payment-aware fetch function that automatically handles 402 responses. */
+  fetch: Fetch
+  /** The original, unwrapped fetch — bypasses payment interception. */
+  rawFetch: typeof globalThis.fetch
+  /** The configured payment methods. */
+  methods: readonly Method.Client[]
+  /** The transport used. */
+  transport: Transport
+  /** Creates a credential from a payment-required response. */
+  createCredential: (
+    response: Response,
+    context?: Context,
+  ) => Promise<string>
+}
+```
+
+### `rawFetch`
+
+The original `fetch` function, before payment interception. Use `rawFetch` when you need to make requests that bypass the 402 handler—for example, probing a 402 endpoint for websocket auth tokens or calling APIs that return 402 for non-payment reasons.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  polyfill: false,
+  methods: [tempo({ account })],
+})
+
+// Bypass payment interception
+const raw = await mppx.rawFetch('https://api.example.com/ws-auth') // [!code focus]
+```
+
+## Parameters
+
+### fetch (optional)
+
+- **Type:** `typeof globalThis.fetch`
+- **Default:** `globalThis.fetch`
+
+Custom fetch function to wrap.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const customFetch = globalThis.fetch
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  fetch: customFetch, // [!code focus]
+  methods: [tempo({ account })],
+})
+```
+
+### methods
+
+- **Type:** `readonly Method.Client[]`
+
+Array of payment methods to use.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  // [!code focus:start]
+  methods: [tempo({ account })],
+  // [!code focus:end]
+})
+```
+
+### onChallenge (optional)
+
+- **Type:** `(challenge: Challenge, helpers: { createCredential: (context?) => Promise<string> }) => Promise<string | undefined>`
+
+Called when a `402` challenge is received, before credential creation. Return a credential string to use it directly, or `undefined` to fall back to the default credential flow.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  methods: [tempo({ account })],
+  onChallenge: async (challenge, { createCredential }) => { // [!code focus:start]
+    console.log('Challenge received:', challenge.method)
+    return createCredential()
+  }, // [!code focus:end]
+})
+```
+
+### polyfill (optional)
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Whether to polyfill `globalThis.fetch` with the payment-aware wrapper.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  methods: [tempo({ account })],
+  polyfill: false, // [!code focus]
+})
+```
+
+### transport (optional)
+
+- **Type:** `Transport`
+- **Default:** `Transport.http()`
+
+Transport to use for extracting challenges and attaching credentials.
+
+```ts twoslash
+import { Mppx, Transport, tempo } from 'mppx/client'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const account = privateKeyToAccount('0x...')
+
+const mppx = Mppx.create({
+  methods: [tempo({ account })],
+  transport: Transport.mcp(), // [!code focus]
+})
+```

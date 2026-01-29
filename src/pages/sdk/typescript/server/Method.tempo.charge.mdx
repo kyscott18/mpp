@@ -1,0 +1,178 @@
+# `Method.tempo.charge` [One-time stablecoin payments]
+
+The `charge` intent for the Tempo payment method. Requests a one-time payment from the client.
+
+## Usage
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({ methods: [tempo.charge()] })
+
+export async function handler(request: Request) {
+  // [!code focus:start]
+  const response = await mppx.charge({
+    amount: '0.1',
+    currency: '0x20c0000000000000000000000000000000000000',
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })(request)
+  // [!code focus:end]
+
+  if (response.status === 402) return response.challenge
+  return response.withReceipt(Response.json({ data: '...' }))
+}
+```
+
+### With expiry
+
+Set a custom expiration time for the charge using the `expires` option.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({ methods: [tempo.charge()] })
+// ---cut---
+import { Expires } from 'mppx'
+
+export async function handler(request: Request) {
+  const response = await mppx.charge({
+    amount: '0.1',
+    currency: '0x20c0000000000000000000000000000000000000',
+    expires: Expires.minutes(10), // [!code focus]
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })(request)
+
+  if (response.status === 402) return response.challenge
+  return response.withReceipt(Response.json({ data: '...' }))
+}
+```
+
+### With description
+
+Add a human-readable description for the payment request.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({ methods: [tempo.charge()] })
+// ---cut---
+export async function handler(request: Request) {
+  const response = await mppx.charge({
+    amount: '0.1',
+    currency: '0x20c0000000000000000000000000000000000000',
+    description: 'API access for /resource', // [!code focus]
+    recipient: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  })(request)
+
+  if (response.status === 402) return response.challenge
+  return response.withReceipt(Response.json({ data: '...' }))
+}
+```
+
+## Return type
+
+Returns a function that accepts a `Request` and returns a response object with payment status.
+
+```ts
+type ReturnType = (request: Request) => Promise<
+  | { status: 402; challenge: Response }
+  | { status: 200; withReceipt: <T>(response: T) => T }
+>
+```
+
+## Configuration
+
+These parameters configure the `tempo.charge()` constructor.
+
+### decimals (optional)
+
+- **Type:** `number`
+- **Default:** `6`
+
+Decimal places for amount parsing.
+
+### externalId (optional)
+
+- **Type:** `string`
+
+External identifier for the payment.
+
+### feePayer (optional)
+
+- **Type:** `Account | string | true`
+
+Account or URL for sponsoring transaction fees. Pass a viem `Account` to co-sign locally, a URL string to delegate to a remote [fee payer service](https://docs.tempo.xyz/sdk/typescript/server/handler.feePayer), or `true` when the `account` parameter doubles as the fee payer.
+
+### getClient (optional)
+
+- **Type:** `(parameters: { chainId?: number }) => MaybePromise<Client>`
+
+Function that returns a viem client for the given chain ID. Overrides the default RPC configuration.
+
+### memo (optional)
+
+- **Type:** `string`
+
+On-chain memo for the transaction.
+
+### testnet (optional)
+
+- **Type:** `boolean`
+
+Testnet mode. Defaults the chain ID to `42431` (Tempo testnet).
+
+### waitForConfirmation (optional)
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Whether to wait for the charge transaction to confirm on-chain before responding. When `false`, the transaction is simulated via `eth_estimateGas` and broadcast without waiting for inclusion. The Receipt optimistically reports `status: 'success'` based on simulation alone.
+
+```ts twoslash
+import { Mppx, tempo } from 'mppx/server'
+
+const mppx = Mppx.create({
+  methods: [tempo.charge({
+    waitForConfirmation: false, // [!code focus]
+  })],
+})
+```
+
+## Request parameters
+
+### amount
+
+- **Type:** `string`
+
+Payment amount in human-readable units. For example, `'0.1'` represents $0.10 USD.
+
+### currency
+
+- **Type:** `string`
+
+TIP-20 token address for the payment currency.
+
+### description (optional)
+
+- **Type:** `string`
+
+Human-readable description of the payment request.
+
+### expires (optional)
+
+- **Type:** `string`
+- **Default:** 5 minutes from now
+
+ISO 8601 timestamp for when the payment challenge expires.
+
+### meta (optional)
+
+- **Type:** `Record<string, string>`
+
+Server-defined correlation data, serialized as `opaque` on the Challenge.
+
+### recipient
+
+- **Type:** `string`
+
+Address to receive the payment.
